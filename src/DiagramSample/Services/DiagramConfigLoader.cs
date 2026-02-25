@@ -79,12 +79,12 @@ public class DiagramConfigLoader
 
     private void ValidateConfig(DiagramConfig config)
     {
-        var ids = new HashSet<string>();
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var n in EnumerateAllNodes(config))
         {
             if (string.IsNullOrWhiteSpace(n.Id)) throw new Exception("Node missing id");
-            if (!ids.Add(n.Id)) throw new Exception($"Duplicate node id: {n.Id}");
+            if (!ids.Add(n.Id!)) throw new Exception($"Duplicate node id: {n.Id}");
         }
 
         // Validate types for containment (optional but helpful)
@@ -120,7 +120,7 @@ public class DiagramConfigLoader
         }
 
         // Validate business process steps
-        var linkIds = new HashSet<string>(allLinks.Select(x => x.Id));
+        var linkIds = new HashSet<string>(allLinks.Select(x => x.Id), StringComparer.OrdinalIgnoreCase);
         foreach (var bp in config.BusinessProcesses)
         {
             foreach (var s in bp.Steps)
@@ -141,7 +141,7 @@ public class DiagramConfigLoader
     {
         var config = LoadConfig();
 
-        var nodeMap = new Dictionary<string, Node>();
+        var nodeMap = new Dictionary<string, Node>(StringComparer.OrdinalIgnoreCase);
 
         // collect all nodes by flattening nested structure
         foreach (var n in EnumerateAllNodes(config))
@@ -163,14 +163,14 @@ public class DiagramConfigLoader
             if (n.Type == "application")
             {
                 // find platform parent
-                var parent = config.Platforms.FirstOrDefault(p => p.Applications.Any(a => a.Id == n.Id));
+                var parent = config.Platforms.FirstOrDefault(p => p.Applications.Any(a => string.Equals(a.Id, n.Id, StringComparison.OrdinalIgnoreCase)));
                 if (parent != null) dict["parent"] = parent.Id;
             }
 
             if (n.Type == "module")
             {
                 // find application parent
-                var parent = config.Platforms.SelectMany(p => p.Applications).FirstOrDefault(a => a.Modules.Any(m => m.Id == n.Id));
+                var parent = config.Platforms.SelectMany(p => p.Applications).FirstOrDefault(a => a.Modules.Any(m => string.Equals(m.Id, n.Id, StringComparison.OrdinalIgnoreCase)));
                 if (parent != null) dict["parent"] = parent.Id;
             }
 
@@ -185,7 +185,10 @@ public class DiagramConfigLoader
             if (l.Via != null && l.Via.Any()) path.AddRange(l.Via);
             path.Add(l.To);
 
-            for (int i = 0; i < path.Count - 1; i++)
+            // normalize path ids to canonical casing from nodeMap when available
+            var normalizedPath = path.Select(p => nodeMap.TryGetValue(p, out var node) ? node.Id! : p).ToList();
+
+            for (int i = 0; i < normalizedPath.Count - 1; i++)
             {
                 var segId = $"{l.Id}__seg__{i}";
                 var showLabel = (i == 0) ? (l.DisplayName ?? string.Empty) : string.Empty; // only first segment shows label
@@ -193,13 +196,13 @@ public class DiagramConfigLoader
                 {
                     data = new Dictionary<string, object?> {
                         ["id"] = segId,
-                        ["source"] = path[i],
-                        ["target"] = path[i+1],
+                        ["source"] = normalizedPath[i],
+                        ["target"] = normalizedPath[i+1],
                         ["displayName"] = showLabel,
                         ["kind"] = l.Kind,
                         ["originalLinkId"] = l.Id,
                         ["segmentIndex"] = i,
-                        ["segmentCount"] = path.Count - 1
+                        ["segmentCount"] = normalizedPath.Count - 1
                     }
                 });
             }

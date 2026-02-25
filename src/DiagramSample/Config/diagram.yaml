@@ -1,75 +1,87 @@
 # Sample diagram configuration demonstrating platforms, applications, modules, links, and business processes
 
 platforms:
-  - id: platform1
-    type: platform
-    displayName: "Platform One"
-    applications:
-      - id: app1
-        type: application
-        displayName: "Orders App"
-        modules:
-          - id: mod1
-            type: module
-            displayName: "API"
-            links:
-              - id: link4
-                from: mod1
-                to: mod2
-                displayName: "queue"
-                kind: event
-          - id: mod2
-            type: module
-            displayName: "Worker"
-        links:
-          - id: link1
-            from: app1
-            to: app3
-            displayName: "HTTP"
-            kind: http
-          - id: link2
-            from: app1
-            to: app2
-            displayName: ""
-            kind: internal
-          - id: link3
-            from: app1
-            to: app3
-            displayName: "via proxy"
-            kind: proxy
-            via: [ app2 ]
-      - id: app2
-        type: application
-        displayName: "Proxy App"
-        modules:
-          - id: mod3
-            type: module
-            displayName: "Proxy Module"
-
-  - id: platform2
-    type: platform
-    displayName: ""
-    applications:
-      - id: app3
-        type: application
-        displayName: "Inventory App"
-        modules: []
+- id: platform1
+  type: platform
+  displayName: "Platform One"
+  applications:
+  - id: app1
+    type: application
+    displayName: "Orders App"
+    modules:
+    - id: mod1
+      type: module
+      displayName: "API"
+      links:
+        - id: link4
+          from: mod1
+          to: mod2
+          displayName: "queue"
+          kind: event
+    - id: mod2
+      type: module
+      displayName: "Worker"
+    links:
+    - id: link1
+      from: app1
+      to: app3
+      displayName: "HTTP"
+      kind: http
+    - id: link2
+      from: app1
+      to: app2
+      displayName: ""
+      kind: internal
+    - id: link3
+      from: app1
+      to: app3
+      displayName: "via proxy"
+      kind: proxy
+      via: [ QM, ACE ]
+  - id: app2
+    type: application
+    displayName: "Proxy App"
+    modules:
+    - id: mod3
+      type: module
+      displayName: "Proxy Module"
+      
+- id: platform2
+  type: platform
+  displayName: ""
+  applications:
+  - id: app3
+    type: application
+    displayName: "Inventory App"
+    modules: []
+- id: queue
+  type: platform
+  displayName: "Queue platform"
+  applications:
+  - id: QM
+    type: application
+    displayName: "QM"
+    modules: []
+  - id: Ace
+    type: application
+    displayName: "Ace"
+    modules: []
 
 businessProcesses:
-  - id: bp1
-    displayName: "Order Processing"
-    color: "#e67e22"
-    hiddenByDefault: false
-    steps:
-      - node: mod1
-      - link: link4
-      - node: mod2
+- id: bp1
+  displayName: "Order Processing"
+  color: "#e67e22"
+  hiddenByDefault: false
+  steps:
+  - node: mod1
+  - link: link4
+  - node: mod2
 
-  - id: bp2
-    displayName: "External Inventory Check"
-    color: "#3498db"
-    hiddenByDefault: true
-    steps:
-      - node: app1
-      - link: link3
-      - node: app3
+- id: bp2
+  displayName: "External Inventory Check"
+  color: "#3498db"
+  hiddenByDefault: true
+  steps:
+  - node: app1
+  - link: link3
+  - node: app3
