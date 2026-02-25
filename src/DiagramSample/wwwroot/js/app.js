@@ -15,7 +15,8 @@ async function loadGraph(){
     container: document.getElementById('cy'),
     elements: elements,
     style: [
-      { selector: 'node', style: { 'label': 'data(displayName)', 'text-valign': 'center', 'text-halign': 'center', 'background-color': '#fff', 'border-color':'#333', 'border-width':1 } },
+      // node labels: smaller, above the node, wrapped if long
+      { selector: 'node', style: { 'label': 'data(displayName)', 'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': -10, 'font-size': 10, 'text-wrap': 'wrap', 'text-max-width': 80, 'background-color': '#fff', 'border-color':'#333', 'border-width':1 } },
       { selector: 'node[type="platform"]', style: { 'shape':'roundrectangle', 'background-color':'#f7f3d9' } },
       { selector: 'node[type="application"]', style: { 'shape':'roundrectangle', 'background-color':'#dfefff' } },
       { selector: 'node[type="module"]', style: { 'shape':'ellipse', 'background-color':'#e8f7e8' } },
