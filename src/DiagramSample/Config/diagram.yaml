@@ -37,7 +37,7 @@ platforms:
       to: app3
       displayName: "via proxy"
       kind: proxy
-      via: [ QM, ACE ]
+      via: [ OBQM, ACE, CMQM ]
   - id: app2
     type: application
     displayName: "Proxy App"
@@ -58,13 +58,17 @@ platforms:
   type: platform
   displayName: "Queue platform"
   applications:
-  - id: QM
+  - id: OBQM
     type: application
-    displayName: "QM"
+    displayName: "OBQM"
     modules: []
   - id: Ace
     type: application
     displayName: "Ace"
+    modules: []
+  - id: CMQM
+    type: application
+    displayName: "CMQM"
     modules: []
 
 businessProcesses:

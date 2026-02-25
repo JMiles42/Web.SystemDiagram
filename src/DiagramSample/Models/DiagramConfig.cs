@@ -16,6 +16,7 @@ public record Node
     public List<Link> Links { get; init; } = new();
     public List<string> Tags { get; init; } = new();
     public string? Owner { get; init; }
+    public string? Icon { get; init; } // optional icon/kind for UI (e.g. queue, database, web, desktop, worker)
 }
 
 public record Link

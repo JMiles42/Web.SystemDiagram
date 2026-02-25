@@ -157,7 +157,8 @@ public class DiagramConfigLoader
             var dict = new Dictionary<string, object?> {
                 ["id"] = n.Id,
                 ["type"] = n.Type,
-                ["displayName"] = string.IsNullOrWhiteSpace(n.DisplayName) ? n.Id : n.DisplayName
+                ["displayName"] = string.IsNullOrWhiteSpace(n.DisplayName) ? n.Id : n.DisplayName,
+                ["icon"] = n.Icon
             };
 
             if (n.Type == "application")
