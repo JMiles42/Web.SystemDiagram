@@ -2,8 +2,10 @@ namespace DiagramSample.Models;
 
 public record DiagramConfig
 {
-    public List<Node> Platforms { get; init; } = new();
-    public List<BusinessProcess> BusinessProcesses { get; init; } = new();
+	public List<Node> Platforms { get; init; } = new();
+
+	// Grouping of business processes only (top-level BusinessProcesses removed)
+	public List<BusinessProcessGroup> BusinessProcessGroups { get; init; } = new();
 }
 
 public record Node
@@ -36,6 +38,16 @@ public record BusinessProcess
     public List<ProcessStep> Steps { get; init; } = new();
     public List<string> UsesLinks { get; init; } = new();
     public string? Color { get; init; }
+    public bool HiddenByDefault { get; init; }
+}
+
+public record BusinessProcessGroup
+{
+    public string? Id { get; init; }
+    public string? DisplayName { get; init; }
+    // Processes are defined under the group in YAML
+    public List<BusinessProcess> Processes { get; init; } = new();
+    // If true, group is collapsed by default in the UI
     public bool HiddenByDefault { get; init; }
 }
 

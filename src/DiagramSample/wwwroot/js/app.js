@@ -38,6 +38,10 @@ async function loadGraph(){
       { selector: 'edge[kind="http"]', style: { 'line-style':'solid', 'line-color':'#2c3e50', 'target-arrow-color':'#2c3e50' } },
       { selector: 'edge[kind="proxy"]', style: { 'line-style':'dashed', 'line-color':'#9b59b6', 'target-arrow-color':'#9b59b6' } },
       { selector: 'edge[kind="event"]', style: { 'line-style':'dotted', 'line-color':'#27ae60', 'target-arrow-color':'#27ae60' } },
+
+      // process highlighting (edges and nodes) — uses element data 'processColor'
+      { selector: '.process-highlight', style: { 'line-color':'data(processColor)', 'target-arrow-color':'data(processColor)', 'width':4 } },
+      { selector: '.process-node', style: { 'border-color':'data(processColor)', 'border-width':4 } },
     ],
     layout: { name: 'cose', idealEdgeLength:80, nodeOverlap:20 }
   });
@@ -47,23 +51,96 @@ async function loadGraph(){
 
 async function loadProcesses(){
   const res = await fetch('/api/diagram/processes');
-  if(!res.ok) return;
-  const procs = await res.json();
   const container = document.getElementById('processList');
   container.innerHTML = '';
-  procs.forEach(p => {
+
+  if(!res.ok){
+    const text = await res.text().catch(()=>res.statusText);
+    const err = document.createElement('div');
+    err.className = 'process-error';
+    err.innerText = 'Error loading processes: ' + (text || res.statusText || res.status);
+    container.appendChild(err);
+    return;
+  }
+
+  const payload = await res.json();
+
+  function createProcessItem(p) {
     const div = document.createElement('div');
     div.className = 'process-item';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = 'proc_'+p.id; cb.checked = !p.hiddenByDefault;
+    // attach the process object to the checkbox for reliable access in handlers
+    cb._proc = p;
     const label = document.createElement('label'); label.htmlFor = cb.id; label.innerText = p.displayName;
     const sw = document.createElement('span'); sw.className = 'legend-swatch'; sw.style.background = p.color || '#f39c12';
     div.appendChild(cb); div.appendChild(sw); div.appendChild(label);
-    container.appendChild(div);
 
-    cb.addEventListener('change', ()=> toggleProcess(p, cb.checked));
+    cb.addEventListener('change', (ev)=> {
+      const target = ev.currentTarget;
+      toggleProcess(target._proc, target.checked);
+    });
     // apply default
     if(cb.checked) toggleProcess(p, true);
-  });
+    return div;
+  }
+
+  function renderProcessList(parentEl, procs){
+    procs.forEach(p => parentEl.appendChild(createProcessItem(p)));
+  }
+
+  let renderedAny = false;
+
+  // groups (expected shape)
+  if (Array.isArray(payload.groups) && payload.groups.length) {
+    payload.groups.forEach(g => {
+      const details = document.createElement('details');
+      details.open = !g.hiddenByDefault;
+      const summary = document.createElement('summary');
+      summary.innerText = g.displayName || g.id || 'Group';
+      details.appendChild(summary);
+
+      const inner = document.createElement('div');
+      inner.className = 'group-processes';
+      if (Array.isArray(g.processes) && g.processes.length) {
+        renderProcessList(inner, g.processes);
+        renderedAny = true;
+      } else {
+        const em = document.createElement('div');
+        em.className = 'empty-group';
+        em.innerText = 'No processes in this group';
+        inner.appendChild(em);
+      }
+      details.appendChild(inner);
+      container.appendChild(details);
+    });
+  }
+
+  // back-compat or stray ungrouped processes (server returns payload.processes)
+  if (Array.isArray(payload.processes) && payload.processes.length) {
+    const header = document.createElement('h4');
+    header.innerText = 'Other Processes';
+    container.appendChild(header);
+    const list = document.createElement('div');
+    renderProcessList(list, payload.processes);
+    container.appendChild(list);
+    renderedAny = true;
+  }
+
+  // Back-compat: server might return a flat array directly
+  if (!renderedAny && Array.isArray(payload) && payload.length) {
+    const header = document.createElement('h4');
+    header.innerText = 'Processes';
+    container.appendChild(header);
+    renderProcessList(container, payload);
+    renderedAny = true;
+  }
+
+  if (!renderedAny) {
+    const msg = document.createElement('div');
+    msg.className = 'no-processes';
+    msg.innerHTML = 'No business process groups found. Define <code>businessProcessGroups</code> in <code>Config/diagram.yaml</code>.';
+    container.appendChild(msg);
+  }
 }
 
 function highlightProcess(p){
@@ -76,11 +153,19 @@ function highlightProcess(p){
     p.steps.forEach(s => {
       if(s.node){
         const n = cy.getElementById(s.node);
-        if(n) n.addClass('process-node'); n.data('processColor', color);
+        if(n && n.length){
+          n.addClass('process-node');
+          n.data('processColor', color);
+        } else {
+          console.warn(`Process ${p.id} references missing node '${s.node}'`);
+        }
       }
       if(s.link){
         // find edges with originalLinkId == link
         const edges = cy.edges().filter(e => e.data('originalLinkId') === s.link);
+        if(edges.length === 0){
+          console.warn(`Process ${p.id} references link '${s.link}' but no matching edges found`);
+        }
         edges.forEach(e => { e.addClass('process-highlight'); e.data('processColor', color); });
       }
     });
@@ -93,7 +178,10 @@ function unhighlightProcess(p){
     p.steps.forEach(s => {
       if(s.node){
         const n = cy.getElementById(s.node);
-        if(n) n.removeClass('process-node'); n.data('processColor', null);
+        if(n && n.length){
+          n.removeClass('process-node');
+          n.data('processColor', null);
+        }
       }
       if(s.link){
         const edges = cy.edges().filter(e => e.data('originalLinkId') === s.link);

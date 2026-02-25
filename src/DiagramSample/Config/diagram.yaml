@@ -38,6 +38,11 @@ platforms:
       displayName: "via proxy"
       kind: proxy
       via: [ OBQM, ACE, CMQM ]
+    - id: link4
+      from: app1
+      to: obdatabase
+      displayName: ""
+      kind: internal
   - id: app2
     type: application
     displayName: "Proxy App"
@@ -45,6 +50,12 @@ platforms:
     - id: mod3
       type: module
       displayName: "Proxy Module"
+    links:
+    - id: link5
+      from: app2
+      to: obdatabase
+      displayName: ""
+      kind: internal
   - id: obdatabase
     type: application
     displayName: "OBDatabase"
@@ -79,21 +90,29 @@ platforms:
     modules: []
     icon: queue
 
-businessProcesses:
-- id: bp1
-  displayName: "Order Processing"
-  color: "#e67e22"
+businessProcessGroups:
+- id: group_orders
+  displayName: "Order Flows"
   hiddenByDefault: false
-  steps:
-  - node: mod1
-  - link: link4
-  - node: mod2
+  processes:
+  - id: bp1
+    displayName: "Order Processing"
+    color: "#e67e22"
+    hiddenByDefault: false
+    steps:
+    - node: mod1
+    - link: link4
+    - node: mod2
 
-- id: bp2
-  displayName: "External Inventory Check"
-  color: "#3498db"
+- id: group_inventory
+  displayName: "Inventory"
   hiddenByDefault: true
-  steps:
-  - node: app1
-  - link: link3
-  - node: app3
+  processes:
+  - id: bp2
+    displayName: "External Inventory Check"
+    color: "#3498db"
+    hiddenByDefault: true
+    steps:
+    - node: app1
+    - link: link3
+    - node: app3
