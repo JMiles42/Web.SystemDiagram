@@ -49,6 +49,34 @@ public class DiagramConfigLoader
         }
     }
 
+    private IEnumerable<Link> EnumerateAllLinks(DiagramConfig config)
+    {
+        // collect links from all nodes (platforms, applications, modules)
+        foreach (var p in config.Platforms)
+        {
+            foreach (var l in p.Links)
+            {
+                yield return l;
+            }
+
+            foreach (var a in p.Applications)
+            {
+                foreach (var l in a.Links)
+                {
+                    yield return l;
+                }
+
+                foreach (var m in a.Modules)
+                {
+                    foreach (var l in m.Links)
+                    {
+                        yield return l;
+                    }
+                }
+            }
+        }
+    }
+
     private void ValidateConfig(DiagramConfig config)
     {
         var ids = new HashSet<string>();
@@ -78,8 +106,9 @@ public class DiagramConfigLoader
             }
         }
 
-        // Validate links
-        foreach (var l in config.Links)
+        // Validate links collected from nodes
+        var allLinks = EnumerateAllLinks(config).ToList();
+        foreach (var l in allLinks)
         {
             if (string.IsNullOrWhiteSpace(l.Id)) throw new Exception("Link missing id");
             if (string.IsNullOrWhiteSpace(l.From) || !ids.Contains(l.From)) throw new Exception($"Link '{l.Id}' references unknown from '{l.From}'");
@@ -91,7 +120,7 @@ public class DiagramConfigLoader
         }
 
         // Validate business process steps
-        var linkIds = new HashSet<string>(config.Links.Select(x => x.Id));
+        var linkIds = new HashSet<string>(allLinks.Select(x => x.Id));
         foreach (var bp in config.BusinessProcesses)
         {
             foreach (var s in bp.Steps)
@@ -128,7 +157,7 @@ public class DiagramConfigLoader
             var dict = new Dictionary<string, object?> {
                 ["id"] = n.Id,
                 ["type"] = n.Type,
-                ["displayName"] = n.DisplayName
+                ["displayName"] = string.IsNullOrWhiteSpace(n.DisplayName) ? n.Id : n.DisplayName
             };
 
             if (n.Type == "application")
@@ -149,7 +178,8 @@ public class DiagramConfigLoader
         }
 
         var edges = new List<object>();
-        foreach (var l in config.Links)
+        var allLinks = EnumerateAllLinks(config).ToList();
+        foreach (var l in allLinks)
         {
             var path = new List<string> { l.From };
             if (l.Via != null && l.Via.Any()) path.AddRange(l.Via);
