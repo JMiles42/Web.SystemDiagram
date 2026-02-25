@@ -3,8 +3,6 @@ namespace DiagramSample.Models;
 public record DiagramConfig
 {
     public List<Node> Platforms { get; init; } = new();
-    public List<Node> Applications { get; init; } = new();
-    public List<Node> Modules { get; init; } = new();
     public List<Link> Links { get; init; } = new();
     public List<BusinessProcess> BusinessProcesses { get; init; } = new();
 }
@@ -14,8 +12,8 @@ public record Node
     public string? Id { get; init; }
     public string? Type { get; init; }
     public string? DisplayName { get; init; }
-    public List<string> Applications { get; init; } = new();
-    public List<string> Modules { get; init; } = new();
+    public List<Node> Applications { get; init; } = new();
+    public List<Node> Modules { get; init; } = new();
     public List<string> Tags { get; init; } = new();
     public string? Owner { get; init; }
 }

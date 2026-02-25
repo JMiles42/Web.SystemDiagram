@@ -4,41 +4,33 @@ platforms:
   - id: platform1
     type: platform
     displayName: "Platform One"
-    applications: [ app1, app2 ]
+    applications:
+      - id: app1
+        type: application
+        displayName: "Orders App"
+        modules:
+          - id: mod1
+            type: module
+            displayName: "API"
+          - id: mod2
+            type: module
+            displayName: "Worker"
+      - id: app2
+        type: application
+        displayName: "Proxy App"
+        modules:
+          - id: mod3
+            type: module
+            displayName: "Proxy Module"
 
   - id: platform2
     type: platform
     displayName: ""
-    applications: [ app3 ]
-
-applications:
-  - id: app1
-    type: application
-    displayName: "Orders App"
-    modules: [ mod1, mod2 ]
-
-  - id: app2
-    type: application
-    displayName: "Proxy App"
-    modules: [ mod3 ]
-
-  - id: app3
-    type: application
-    displayName: "Inventory App"
-    modules: []
-
-modules:
-  - id: mod1
-    type: module
-    displayName: "API"
-
-  - id: mod2
-    type: module
-    displayName: "Worker"
-
-  - id: mod3
-    type: module
-    displayName: "Proxy Module"
+    applications:
+      - id: app3
+        type: application
+        displayName: "Inventory App"
+        modules: []
 
 links:
   - id: link1

@@ -33,37 +33,48 @@ public class DiagramConfigLoader
         return config;
     }
 
+    private IEnumerable<Node> EnumerateAllNodes(DiagramConfig config)
+    {
+        foreach (var p in config.Platforms)
+        {
+            yield return p;
+            foreach (var a in p.Applications)
+            {
+                yield return a;
+                foreach (var m in a.Modules)
+                {
+                    yield return m;
+                }
+            }
+        }
+    }
+
     private void ValidateConfig(DiagramConfig config)
     {
         var ids = new HashSet<string>();
 
-        void AddNodes(IEnumerable<Node> nodes)
+        foreach (var n in EnumerateAllNodes(config))
         {
-            foreach (var n in nodes)
-            {
-                if (string.IsNullOrWhiteSpace(n.Id)) throw new Exception("Node missing id");
-                if (!ids.Add(n.Id)) throw new Exception($"Duplicate node id: {n.Id}");
-            }
+            if (string.IsNullOrWhiteSpace(n.Id)) throw new Exception("Node missing id");
+            if (!ids.Add(n.Id)) throw new Exception($"Duplicate node id: {n.Id}");
         }
 
-        AddNodes(config.Platforms);
-        AddNodes(config.Applications);
-        AddNodes(config.Modules);
-
-        // Validate containment
+        // Validate types for containment (optional but helpful)
         foreach (var p in config.Platforms)
         {
-            foreach (var aid in p.Applications)
+            foreach (var a in p.Applications)
             {
-                if (!ids.Contains(aid)) throw new Exception($"Platform '{p.Id}' references unknown application '{aid}'");
+                if (a.Type != null && a.Type != "application")
+                    throw new Exception($"Platform '{p.Id}' contains a child that is not an application: '{a.Id}'");
             }
-        }
 
-        foreach (var a in config.Applications)
-        {
-            foreach (var mid in a.Modules)
+            foreach (var a in p.Applications)
             {
-                if (!ids.Contains(mid)) throw new Exception($"Application '{a.Id}' references unknown module '{mid}'");
+                foreach (var m in a.Modules)
+                {
+                    if (m.Type != null && m.Type != "module")
+                        throw new Exception($"Application '{a.Id}' contains a child that is not a module: '{m.Id}'");
+                }
             }
         }
 
@@ -71,11 +82,11 @@ public class DiagramConfigLoader
         foreach (var l in config.Links)
         {
             if (string.IsNullOrWhiteSpace(l.Id)) throw new Exception("Link missing id");
-            if (!ids.Contains(l.From)) throw new Exception($"Link '{l.Id}' references unknown from '{l.From}'");
-            if (!ids.Contains(l.To)) throw new Exception($"Link '{l.Id}' references unknown to '{l.To}'");
+            if (string.IsNullOrWhiteSpace(l.From) || !ids.Contains(l.From)) throw new Exception($"Link '{l.Id}' references unknown from '{l.From}'");
+            if (string.IsNullOrWhiteSpace(l.To) || !ids.Contains(l.To)) throw new Exception($"Link '{l.Id}' references unknown to '{l.To}'");
             foreach (var v in l.Via)
             {
-                if (!ids.Contains(v)) throw new Exception($"Link '{l.Id}' references unknown via '{v}'");
+                if (string.IsNullOrWhiteSpace(v) || !ids.Contains(v)) throw new Exception($"Link '{l.Id}' references unknown via '{v}'");
             }
         }
 
@@ -103,15 +114,17 @@ public class DiagramConfigLoader
 
         var nodeMap = new Dictionary<string, Node>();
 
-        // collect all nodes
-        foreach (var n in config.Platforms) nodeMap[n.Id] = n;
-        foreach (var n in config.Applications) nodeMap[n.Id] = n;
-        foreach (var n in config.Modules) nodeMap[n.Id] = n;
+        // collect all nodes by flattening nested structure
+        foreach (var n in EnumerateAllNodes(config))
+        {
+            nodeMap[n.Id!] = n;
+        }
 
         // build node elements with parent when applicable
         var nodesWithParent = new List<object>();
-        foreach (var n in nodeMap.Values)
+        foreach (var kv in nodeMap)
         {
+            var n = kv.Value;
             var dict = new Dictionary<string, object?> {
                 ["id"] = n.Id,
                 ["type"] = n.Type,
@@ -120,13 +133,15 @@ public class DiagramConfigLoader
 
             if (n.Type == "application")
             {
-                var parent = config.Platforms.FirstOrDefault(p => p.Applications.Contains(n.Id));
+                // find platform parent
+                var parent = config.Platforms.FirstOrDefault(p => p.Applications.Any(a => a.Id == n.Id));
                 if (parent != null) dict["parent"] = parent.Id;
             }
 
             if (n.Type == "module")
             {
-                var parent = config.Applications.FirstOrDefault(a => a.Modules.Contains(n.Id));
+                // find application parent
+                var parent = config.Platforms.SelectMany(p => p.Applications).FirstOrDefault(a => a.Modules.Any(m => m.Id == n.Id));
                 if (parent != null) dict["parent"] = parent.Id;
             }
 
