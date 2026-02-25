@@ -45,6 +45,10 @@ platforms:
     - id: mod3
       type: module
       displayName: "Proxy Module"
+  - id: obdatabase
+    type: application
+    displayName: "OBDatabase"
+    icon: database
       
 - id: platform2
   type: platform
@@ -54,6 +58,7 @@ platforms:
     type: application
     displayName: "Inventory App"
     modules: []
+    icon: worker
 - id: queue
   type: platform
   displayName: "Queue platform"
@@ -62,14 +67,17 @@ platforms:
     type: application
     displayName: "OBQM"
     modules: []
+    icon: queue
   - id: Ace
     type: application
     displayName: "Ace"
     modules: []
+    icon: queue
   - id: CMQM
     type: application
     displayName: "CMQM"
     modules: []
+    icon: queue
 
 businessProcesses:
 - id: bp1

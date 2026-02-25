@@ -154,11 +154,19 @@ public class DiagramConfigLoader
         foreach (var kv in nodeMap)
         {
             var n = kv.Value;
+            // Emit a full icon URL when Icon is present so client can use it directly
+            string? iconUrl = null;
+            if (!string.IsNullOrWhiteSpace(n.Icon))
+            {
+                var normalized = n.Icon!.Trim().ToLowerInvariant().Replace(' ', '-');
+                iconUrl = $"/icons/{normalized}.svg";
+            }
+
             var dict = new Dictionary<string, object?> {
                 ["id"] = n.Id,
                 ["type"] = n.Type,
                 ["displayName"] = string.IsNullOrWhiteSpace(n.DisplayName) ? n.Id : n.DisplayName,
-                ["icon"] = n.Icon
+                ["icon"] = iconUrl
             };
 
             if (n.Type == "application")

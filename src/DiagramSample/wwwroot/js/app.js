@@ -8,7 +8,16 @@ async function loadGraph(){
   const data = await res.json();
 
   const elements = [];
-  data.nodes.forEach(n => elements.push(n));
+  // ensure node data.icon becomes a usable URL (if present)
+  data.nodes.forEach(n => {
+    if (n.data && n.data.icon) {
+      const iconVal = String(n.data.icon);
+      if (!iconVal.startsWith('/') && !iconVal.startsWith('http')) {
+        n.data.icon = '/icons/' + iconVal.toLowerCase() + '.svg';
+      }
+    }
+    elements.push(n);
+  });
   data.edges.forEach(e => elements.push(e));
 
   const cy = cytoscape({
@@ -22,16 +31,13 @@ async function loadGraph(){
       { selector: 'node[type="module"]', style: { 'shape':'ellipse', 'background-color':'#e8f7e8' } },
       { selector: ':parent', style: { 'background-opacity': 0.05, 'padding': 10 } },
 
+      // icon rule: use node.data.icon (URL) when present
+      { selector: 'node[icon]', style: { 'background-image': 'data(icon)', 'background-fit':'contain', 'background-width':'60%', 'background-height':'60%', 'background-clip':'node' } },
+
       { selector: 'edge', style: { 'width':2, 'line-color':'#888', 'target-arrow-shape':'triangle', 'target-arrow-color':'#888', 'curve-style':'bezier', 'label':'data(displayName)', 'font-size':10 } },
       { selector: 'edge[kind="http"]', style: { 'line-style':'solid', 'line-color':'#2c3e50', 'target-arrow-color':'#2c3e50' } },
       { selector: 'edge[kind="proxy"]', style: { 'line-style':'dashed', 'line-color':'#9b59b6', 'target-arrow-color':'#9b59b6' } },
       { selector: 'edge[kind="event"]', style: { 'line-style':'dotted', 'line-color':'#27ae60', 'target-arrow-color':'#27ae60' } },
-
-      { selector: '[displayName = ""]', style: { 'text-opacity': 0 } },
-      { selector: 'node[displayName = ""]', style: { 'text-opacity': 0 } },
-
-      { selector: '.process-highlight', style: { 'line-color':'data(processColor)', 'target-arrow-color':'data(processColor)', 'width':4 } },
-      { selector: '.process-node', style: { 'background-color':'data(processColor)', 'border-color':'#000', 'border-width':2 } }
     ],
     layout: { name: 'cose', idealEdgeLength:80, nodeOverlap:20 }
   });
