@@ -34,10 +34,23 @@ async function loadGraph(){
       // icon rule: use node.data.icon (URL) when present
       { selector: 'node[icon]', style: { 'background-image': 'data(icon)', 'background-fit':'contain', 'background-width':'60%', 'background-height':'60%', 'background-clip':'node' } },
 
+      // default edge styling
       { selector: 'edge', style: { 'width':2, 'line-color':'#888', 'target-arrow-shape':'triangle', 'target-arrow-color':'#888', 'curve-style':'bezier', 'label':'data(displayName)', 'font-size':10 } },
+
+      // existing kinds
       { selector: 'edge[kind="http"]', style: { 'line-style':'solid', 'line-color':'#2c3e50', 'target-arrow-color':'#2c3e50' } },
       { selector: 'edge[kind="proxy"]', style: { 'line-style':'dashed', 'line-color':'#9b59b6', 'target-arrow-color':'#9b59b6' } },
       { selector: 'edge[kind="event"]', style: { 'line-style':'dotted', 'line-color':'#27ae60', 'target-arrow-color':'#27ae60' } },
+
+      { selector: 'edge[kind="smtp"]', style: { 'line-style':'solid', 'line-color':'#c0392b', 'target-arrow-color':'#c0392b', 'target-arrow-shape':'triangle', 'source-arrow-shape':'none' } },
+      { selector: 'edge[kind="database"]', style: { 'line-style':'dashed', 'line-color':'#16a085', 'target-arrow-color':'#16a085', 'target-arrow-shape':'vee' } },
+      { selector: 'edge[kind="sftp"]', style: { 'line-style':'dashed', 'line-color':'#8e44ad', 'target-arrow-color':'#8e44ad', 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="soap"]', style: { 'line-style':'dotted', 'line-color':'#0aa3a3', 'target-arrow-color':'#0aa3a3', 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="websocket"]', style: { 'line-style':'solid', 'line-color':'#2980b9', 'target-arrow-color':'#2980b9', 'width':3, 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="grpc"]', style: { 'line-style':'dotted', 'line-color':'#2c3e50', 'target-arrow-color':'#2c3e50', 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="mq"], edge[kind="messagequeue"]', style: { 'line-style':'dashed', 'line-color':'#e67e22', 'target-arrow-color':'#e67e22', 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="ftp"]', style: { 'line-style':'dashed', 'line-color':'#7f8c8d', 'target-arrow-color':'#7f8c8d', 'target-arrow-shape':'triangle' } },
+      { selector: 'edge[kind="rpc"]', style: { 'line-style':'dotted', 'line-color':'#9b59b6', 'target-arrow-color':'#9b59b6', 'target-arrow-shape':'triangle' } },
 
       // process highlighting (edges and nodes) — uses element data 'processColor'
       { selector: '.process-highlight', style: { 'line-color':'data(processColor)', 'target-arrow-color':'data(processColor)', 'width':4 } },
