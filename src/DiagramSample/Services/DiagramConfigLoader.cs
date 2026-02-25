@@ -37,76 +37,61 @@ public class DiagramConfigLoader
     {
         var ids = new HashSet<string>();
 
-        void addList(IEnumerable<Node>? nodes)
+        void AddNodes(IEnumerable<Node> nodes)
         {
-            if (nodes == null) return;
             foreach (var n in nodes)
             {
-                if (string.IsNullOrWhiteSpace(n.id)) throw new Exception("Node missing id");
-                if (!ids.Add(n.id)) throw new Exception($"Duplicate node id: {n.id}");
+                if (string.IsNullOrWhiteSpace(n.Id)) throw new Exception("Node missing id");
+                if (!ids.Add(n.Id)) throw new Exception($"Duplicate node id: {n.Id}");
             }
         }
 
-        addList(config.platforms);
-        addList(config.applications);
-        addList(config.modules);
+        AddNodes(config.Platforms);
+        AddNodes(config.Applications);
+        AddNodes(config.Modules);
 
         // Validate containment
-        if (config.platforms != null)
+        foreach (var p in config.Platforms)
         {
-            foreach (var p in config.platforms)
+            foreach (var aid in p.Applications)
             {
-                if (p.applications == null) continue;
-                foreach (var aid in p.applications)
-                    if (!ids.Contains(aid)) throw new Exception($"Platform '{p.id}' references unknown application '{aid}'");
+                if (!ids.Contains(aid)) throw new Exception($"Platform '{p.Id}' references unknown application '{aid}'");
             }
         }
 
-        if (config.applications != null)
+        foreach (var a in config.Applications)
         {
-            foreach (var a in config.applications)
+            foreach (var mid in a.Modules)
             {
-                if (a.modules == null) continue;
-                foreach (var mid in a.modules)
-                    if (!ids.Contains(mid)) throw new Exception($"Application '{a.id}' references unknown module '{mid}'");
+                if (!ids.Contains(mid)) throw new Exception($"Application '{a.Id}' references unknown module '{mid}'");
             }
         }
 
         // Validate links
-        if (config.links != null)
+        foreach (var l in config.Links)
         {
-            foreach (var l in config.links)
+            if (string.IsNullOrWhiteSpace(l.Id)) throw new Exception("Link missing id");
+            if (!ids.Contains(l.From)) throw new Exception($"Link '{l.Id}' references unknown from '{l.From}'");
+            if (!ids.Contains(l.To)) throw new Exception($"Link '{l.Id}' references unknown to '{l.To}'");
+            foreach (var v in l.Via)
             {
-                if (string.IsNullOrWhiteSpace(l.id)) throw new Exception("Link missing id");
-                if (!ids.Contains(l.from ?? "")) throw new Exception($"Link '{l.id}' references unknown from '{l.from}'");
-                if (!ids.Contains(l.to ?? "")) throw new Exception($"Link '{l.id}' references unknown to '{l.to}'");
-                if (l.via != null)
-                {
-                    foreach (var v in l.via)
-                    {
-                        if (!ids.Contains(v)) throw new Exception($"Link '{l.id}' references unknown via '{v}'");
-                    }
-                }
+                if (!ids.Contains(v)) throw new Exception($"Link '{l.Id}' references unknown via '{v}'");
             }
         }
 
         // Validate business process steps
-        if (config.businessProcesses != null)
+        var linkIds = new HashSet<string>(config.Links.Select(x => x.Id));
+        foreach (var bp in config.BusinessProcesses)
         {
-            var linkIds = new HashSet<string>(config.links?.Select(x => x.id ?? string.Empty) ?? Enumerable.Empty<string>());
-            foreach (var bp in config.businessProcesses)
+            foreach (var s in bp.Steps)
             {
-                if (bp.steps == null) continue;
-                foreach (var s in bp.steps)
+                if (!string.IsNullOrEmpty(s.Node))
                 {
-                    if (!string.IsNullOrEmpty(s.node))
-                    {
-                        if (!ids.Contains(s.node)) throw new Exception($"BusinessProcess '{bp.id}' references unknown node '{s.node}'");
-                    }
-                    if (!string.IsNullOrEmpty(s.link))
-                    {
-                        if (!linkIds.Contains(s.link)) throw new Exception($"BusinessProcess '{bp.id}' references unknown link '{s.link}'");
-                    }
+                    if (!ids.Contains(s.Node)) throw new Exception($"BusinessProcess '{bp.Id}' references unknown node '{s.Node}'");
+                }
+                if (!string.IsNullOrEmpty(s.Link))
+                {
+                    if (!linkIds.Contains(s.Link)) throw new Exception($"BusinessProcess '{bp.Id}' references unknown link '{s.Link}'");
                 }
             }
         }
@@ -116,85 +101,62 @@ public class DiagramConfigLoader
     {
         var config = LoadConfig();
 
-        var nodes = new List<object>();
-        var nodeMap = new Dictionary<string, Node?>();
+        var nodeMap = new Dictionary<string, Node>();
 
-        void addNodes(IEnumerable<Node>? list)
-        {
-            if (list == null) return;
-            foreach (var n in list)
-            {
-                nodeMap[n.id!] = n;
-                nodes.Add(new
-                {
-                    data = new Dictionary<string, object?> {
-                        ["id"] = n.id,
-                        ["type"] = n.type,
-                        ["displayName"] = n.displayName
-                    }
-                });
-            }
-        }
+        // collect all nodes
+        foreach (var n in config.Platforms) nodeMap[n.Id] = n;
+        foreach (var n in config.Applications) nodeMap[n.Id] = n;
+        foreach (var n in config.Modules) nodeMap[n.Id] = n;
 
-        addNodes(config.platforms);
-        addNodes(config.applications);
-        addNodes(config.modules);
-
-        // Attach parents for compound nodes
+        // build node elements with parent when applicable
         var nodesWithParent = new List<object>();
-        // rebuild nodes with parent where applicable
         foreach (var n in nodeMap.Values)
         {
             var dict = new Dictionary<string, object?> {
-                ["id"] = n!.id,
-                ["type"] = n.type,
-                ["displayName"] = n.displayName
+                ["id"] = n.Id,
+                ["type"] = n.Type,
+                ["displayName"] = n.DisplayName
             };
-            // application -> parent platform
-            if (n.type == "application")
+
+            if (n.Type == "application")
             {
-                // find platform that lists this application
-                var parent = config.platforms?.FirstOrDefault(p => p.applications != null && p.applications.Contains(n.id));
-                if (parent != null) dict["parent"] = parent.id;
+                var parent = config.Platforms.FirstOrDefault(p => p.Applications.Contains(n.Id));
+                if (parent != null) dict["parent"] = parent.Id;
             }
-            // module -> parent application
-            if (n.type == "module")
+
+            if (n.Type == "module")
             {
-                var parent = config.applications?.FirstOrDefault(a => a.modules != null && a.modules.Contains(n.id));
-                if (parent != null) dict["parent"] = parent.id;
+                var parent = config.Applications.FirstOrDefault(a => a.Modules.Contains(n.Id));
+                if (parent != null) dict["parent"] = parent.Id;
             }
 
             nodesWithParent.Add(new { data = dict });
         }
 
         var edges = new List<object>();
-        if (config.links != null)
+        foreach (var l in config.Links)
         {
-            foreach (var l in config.links)
-            {
-                var path = new List<string>();
-                path.Add(l.from!);
-                if (l.via != null && l.via.Any()) path.AddRange(l.via);
-                path.Add(l.to!);
+            var path = new List<string> { l.From };
+            if (l.Via != null && l.Via.Any()) path.AddRange(l.Via);
+            path.Add(l.To);
 
-                for (int i = 0; i < path.Count - 1; i++)
+            for (int i = 0; i < path.Count - 1; i++)
+            {
+                var segId = $"{l.Id}__seg__{i}";
+                var showLabel = (i == 0) ? (l.DisplayName ?? string.Empty) : string.Empty; // only first segment shows label
+                edges.Add(new
                 {
-                    var segId = $"{l.id}__seg__{i}";
-                    var showLabel = (i == 0) ? (l.displayName ?? "") : ""; // only first segment shows label
-                    edges.Add(new
-                    {
-                        data = new Dictionary<string, object?> {
-                            ["id"] = segId,
-                            ["source"] = path[i],
-                            ["target"] = path[i+1],
-                            ["displayName"] = showLabel,
-                            ["kind"] = l.kind,
-                            ["originalLinkId"] = l.id,
-                            ["segmentIndex"] = i,
-                            ["segmentCount"] = path.Count - 1
-                        }
-                    });
-                }
+                    data = new Dictionary<string, object?> {
+                        ["id"] = segId,
+                        ["source"] = path[i],
+                        ["target"] = path[i+1],
+                        ["displayName"] = showLabel,
+                        ["kind"] = l.Kind,
+                        ["originalLinkId"] = l.Id,
+                        ["segmentIndex"] = i,
+                        ["segmentCount"] = path.Count - 1
+                    }
+                });
             }
         }
 
@@ -205,21 +167,18 @@ public class DiagramConfigLoader
     {
         var config = LoadConfig();
         var list = new List<object>();
-        if (config.businessProcesses != null)
+        foreach (var bp in config.BusinessProcesses)
         {
-            foreach (var bp in config.businessProcesses)
+            if (string.IsNullOrWhiteSpace(bp.DisplayName)) continue; // do not show unnamed
+            list.Add(new
             {
-                if (string.IsNullOrWhiteSpace(bp.displayName)) continue; // do not show unnamed
-                list.Add(new
-                {
-                    id = bp.id,
-                    displayName = bp.displayName,
-                    steps = bp.steps,
-                    usesLinks = bp.usesLinks,
-                    color = bp.color,
-                    hiddenByDefault = bp.hiddenByDefault ?? false
-                });
-            }
+                id = bp.Id,
+                displayName = bp.DisplayName,
+                steps = bp.Steps,
+                usesLinks = bp.UsesLinks,
+                color = bp.Color,
+                hiddenByDefault = bp.HiddenByDefault
+            });
         }
 
         return list;

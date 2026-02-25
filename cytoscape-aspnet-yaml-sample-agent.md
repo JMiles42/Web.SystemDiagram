@@ -25,6 +25,8 @@ Create a **sample ASP.NET Core** application that:
 - Use **ASP.NET Core** (choose .NET 8 minimal hosting).
 - Use minimal APIs
 - Use standard C# naming standards
+- Use records where possible
+- Use empty lists not null lists where possible
 - UI can be plain HTML + vanilla JS (no React required).
 - YAML parsing should be done in .NET using **YamlDotNet**.
 - Cytoscape.js must be included as a local static asset under `wwwroot/lib/cytoscape/` (or similar).

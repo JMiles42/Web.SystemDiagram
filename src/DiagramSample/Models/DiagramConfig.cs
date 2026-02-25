@@ -1,51 +1,47 @@
-using System.Collections.Generic;
-
 namespace DiagramSample.Models;
 
-public class DiagramConfig
+public record DiagramConfig
 {
-    public List<Node>? platforms { get; set; }
-    public List<Node>? applications { get; set; }
-    public List<Node>? modules { get; set; }
-
-    public List<Link>? links { get; set; }
-
-    public List<BusinessProcess>? businessProcesses { get; set; }
+    public List<Node> Platforms { get; init; } = new();
+    public List<Node> Applications { get; init; } = new();
+    public List<Node> Modules { get; init; } = new();
+    public List<Link> Links { get; init; } = new();
+    public List<BusinessProcess> BusinessProcesses { get; init; } = new();
 }
 
-public class Node
+public record Node
 {
-    public string? id { get; set; }
-    public string? type { get; set; }
-    public string? displayName { get; set; }
-    public List<string>? applications { get; set; } // for platform
-    public List<string>? modules { get; set; } // for application
-    public List<string>? tags { get; set; }
-    public string? owner { get; set; }
+    public string? Id { get; init; }
+    public string? Type { get; init; }
+    public string? DisplayName { get; init; }
+    public List<string> Applications { get; init; } = new();
+    public List<string> Modules { get; init; } = new();
+    public List<string> Tags { get; init; } = new();
+    public string? Owner { get; init; }
 }
 
-public class Link
+public record Link
 {
-    public string? id { get; set; }
-    public string? from { get; set; }
-    public string? to { get; set; }
-    public string? displayName { get; set; }
-    public string? kind { get; set; }
-    public List<string>? via { get; set; }
+    public string? Id { get; init; }
+    public string? From { get; init; }
+    public string? To { get; init; }
+    public string? DisplayName { get; init; }
+    public string? Kind { get; init; }
+    public List<string> Via { get; init; } = new();
 }
 
-public class BusinessProcess
+public record BusinessProcess
 {
-    public string? id { get; set; }
-    public string? displayName { get; set; }
-    public List<ProcessStep>? steps { get; set; }
-    public List<string>? usesLinks { get; set; }
-    public string? color { get; set; }
-    public bool? hiddenByDefault { get; set; }
+    public string? Id { get; init; }
+    public string? DisplayName { get; init; }
+    public List<ProcessStep> Steps { get; init; } = new();
+    public List<string> UsesLinks { get; init; } = new();
+    public string? Color { get; init; }
+    public bool HiddenByDefault { get; init; }
 }
 
-public class ProcessStep
+public record ProcessStep
 {
-    public string? node { get; set; }
-    public string? link { get; set; }
+    public string? Node { get; init; }
+    public string? Link { get; init; }
 }
